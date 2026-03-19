@@ -18,8 +18,13 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 PREFERRED_MODEL_ORDER = [
     "nano-banana2",
     "nano-banana-pro",
-    "gpt-image-1.5-high",
     "seedream-5-lite",
+    "gpt-image-1.5-high",
+    "grok-imagine-image",
+    "firered-image-edit-v1.1",
+    "hunyuan-image-3.0",
+    "qwen-image-edit-plus-2511",
+    "flux2-klein-9b",
 ]
 
 
@@ -467,6 +472,11 @@ def format_model_label(model_alias: str) -> str:
         "nano-banana-pro": "Nano Banana Pro",
         "gpt-image-1.5-high": "GPT Image 1.5 High",
         "seedream-5-lite": "Seedream 5 Lite",
+        "qwen-image-edit-plus-2511": "Qwen Image Edit Plus 2511",
+        "flux2-klein-9b": "Flux2 Klein 9B",
+        "grok-imagine-image": "Grok Imagine Image",
+        "firered-image-edit-v1.1": "FireRed Image Edit v1.1",
+        "hunyuan-image-3.0": "Hunyuan Image 3.0",
     }
     return label_map.get(model_alias, model_alias)
 
@@ -623,6 +633,10 @@ def filter_rows(rows: list[dict], selected_categories: list[str], keyword: str, 
     return filtered
 
 
+def parse_multiline_or_csv(text: str) -> list[str]:
+    return [token.strip() for token in re.split(r"[\n,]+", text) if token.strip()]
+
+
 def paginate_rows(rows: list[dict], page_size: int, page_number: int) -> tuple[list[dict], int]:
     if not rows:
         return [], 1
@@ -770,9 +784,17 @@ def main():
         )
         status_filter = st.radio("展示状态", ["全部", "仅完整", "仅缺图"], horizontal=False)
         keyword = st.text_input("关键词搜索", placeholder="支持 group id / prompt / edited_attributes")
+        hidden_groups_raw = st.text_area(
+            "不显示的组（group_key）",
+            value="",
+            placeholder="每行一个，或用逗号分隔",
+        )
         page_size = st.selectbox("每页显示", [5, 10, 20, 50], index=3)
 
     filtered_rows = filter_rows(rows, selected_categories, keyword, status_filter)
+    hidden_groups = set(parse_multiline_or_csv(hidden_groups_raw))
+    if hidden_groups:
+        filtered_rows = [row for row in filtered_rows if row["group_key"] not in hidden_groups]
 
     if not filtered_rows:
         st.warning("当前筛选条件下没有数据。")
